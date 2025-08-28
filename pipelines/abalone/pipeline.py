@@ -26,7 +26,7 @@ from sagemaker.processing import (
     ScriptProcessor,
 )
 from sagemaker.sklearn.processing import SKLearnProcessor
-from sagemaker.workflow.conditions import ConditionLessThanOrEqualTo
+from sagemaker.workflow.conditions import ConditionGreaterThanOrEqualTo
 from sagemaker.workflow.condition_step import (
     ConditionStep,
 )
@@ -154,9 +154,13 @@ def get_pipeline(
     model_approval_status = ParameterString(
         name="ModelApprovalStatus", default_value="PendingManualApproval"
     )
-    input_data = ParameterString(
-        name="InputDataUrl",
-        default_value=f"s3://sagemaker-servicecatalog-seedcode-{region}/dataset/abalone-dataset.csv",
+    products_data = ParameterString(
+        name="ProductsDataUrl",
+        default_value="s3://sainsbury53/input/ProductDetails.csv",
+    )
+    catalogue_data = ParameterString(
+        name="CatalogueDataUrl",
+        default_value="s3://sainsbury53/input/CatalogueDiscontinuation.csv",
     )
 
     # processing step for feature engineering
@@ -175,15 +179,20 @@ def get_pipeline(
             ProcessingOutput(output_name="test", source="/opt/ml/processing/test"),
         ],
         code=os.path.join(BASE_DIR, "preprocess.py"),
-        arguments=["--input-data", input_data],
+        arguments=[
+            "--products-data",
+            products_data,
+            "--catalogue-data",
+            catalogue_data,
+        ],
     )
     step_process = ProcessingStep(
-        name="PreprocessAbaloneData",
+        name="PreprocessCatalogueData",
         step_args=step_args,
     )
 
     # training step for generating model artifacts
-    model_path = f"s3://{sagemaker_session.default_bucket()}/{base_job_prefix}/AbaloneTrain"
+    model_path = f"s3://{sagemaker_session.default_bucket()}/{base_job_prefix}/CatalogueTrain"
     image_uri = sagemaker.image_uris.retrieve(
         framework="xgboost",
         region=region,
@@ -196,12 +205,12 @@ def get_pipeline(
         instance_type=training_instance_type,
         instance_count=1,
         output_path=model_path,
-        base_job_name=f"{base_job_prefix}/abalone-train",
+        base_job_name=f"{base_job_prefix}/catalogue-train",
         sagemaker_session=pipeline_session,
         role=role,
     )
     xgb_train.set_hyperparameters(
-        objective="reg:linear",
+        objective="binary:logistic",
         num_round=50,
         max_depth=5,
         eta=0.2,
@@ -227,7 +236,7 @@ def get_pipeline(
         },
     )
     step_train = TrainingStep(
-        name="TrainAbaloneModel",
+        name="TrainCatalogueModel",
         step_args=step_args,
     )
 
@@ -237,7 +246,7 @@ def get_pipeline(
         command=["python3"],
         instance_type=processing_instance_type,
         instance_count=1,
-        base_job_name=f"{base_job_prefix}/script-abalone-eval",
+        base_job_name=f"{base_job_prefix}/script-catalogue-eval",
         sagemaker_session=pipeline_session,
         role=role,
     )
@@ -265,7 +274,7 @@ def get_pipeline(
         path="evaluation.json",
     )
     step_eval = ProcessingStep(
-        name="EvaluateAbaloneModel",
+        name="EvaluateCatalogueModel",
         step_args=step_args,
         property_files=[evaluation_report],
     )
@@ -295,22 +304,22 @@ def get_pipeline(
         model_metrics=model_metrics,
     )
     step_register = ModelStep(
-        name="RegisterAbaloneModel",
+        name="RegisterCatalogueModel",
         step_args=step_args,
     )
 
     # condition step for evaluating model quality and branching execution
-    cond_lte = ConditionLessThanOrEqualTo(
+    cond_gte = ConditionGreaterThanOrEqualTo(
         left=JsonGet(
             step_name=step_eval.name,
             property_file=evaluation_report,
-            json_path="regression_metrics.mse.value"
+            json_path="classification_metrics.accuracy.value"
         ),
-        right=6.0,
+        right=0.8,
     )
     step_cond = ConditionStep(
-        name="CheckMSEAbaloneEvaluation",
-        conditions=[cond_lte],
+        name="CheckAccuracyCatalogueEvaluation",
+        conditions=[cond_gte],
         if_steps=[step_register],
         else_steps=[],
     )
@@ -323,7 +332,8 @@ def get_pipeline(
             processing_instance_count,
             training_instance_type,
             model_approval_status,
-            input_data,
+            products_data,
+            catalogue_data,
         ],
         steps=[step_process, step_train, step_eval, step_cond],
         sagemaker_session=pipeline_session,
