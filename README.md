@@ -30,7 +30,7 @@ The template provides a starting point for bringing your SageMaker Pipeline deve
 This project builds a SageMaker ML pipeline to predict whether products will be **discontinued** in upcoming Argos catalogue range refreshes.  
 The solution supports **preprocessing, model training, evaluation, and artifact storage** in S3, as shown in figure 1.
 
-![Succesfull Pipeline Run](images/completed_pipeline.png)
+![Succesfull Pipeline Run](img/completed_pipeline.png)
 
 ---
 
