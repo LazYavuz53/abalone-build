@@ -13,6 +13,25 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
+# Column order for downstream training and evaluation
+COLUMNS = [
+    "DiscontinuedTF",
+    "CatEdition",
+    "SpringSummer",
+    "ProductKey",
+    "WeeksOut",
+    "Status",
+    "SalePriceIncVAT",
+    "ForecastPerWeek",
+    "ActualsPerWeek",
+    "Supplier",
+    "HierarchyLevel1",
+    "HierarchyLevel2",
+    "DIorDOM",
+    "Seasonal",
+]
+
+
 
 def to_bool01(s: pd.Series) -> pd.Series:
     """Normalize various boolean-like strings to 0/1 integers."""
@@ -126,7 +145,7 @@ if __name__ == "__main__":
 
     cols_to_keep = [c for c in [
         "CatEdition","SpringSummer","ProductKey","WeeksOut","Status",
-        "SalePriceIncVAT","ForecastPerWeek","ActualsPerWeek","Fcast_to_Actual",
+        "SalePriceIncVAT","ForecastPerWeek","ActualsPerWeek",
         "DiscontinuedTF","Supplier","HierarchyLevel1","HierarchyLevel2","DIorDOM","Seasonal"
     ] if c in df.columns]
     model_df = df[cols_to_keep].copy()
@@ -144,10 +163,13 @@ if __name__ == "__main__":
             filtered_df[col] = filtered_df[col].astype("category").cat.codes
     dataset = pd.concat([y, filtered_df], axis=1).fillna(0)
     dataset = dataset.sample(frac=1, random_state=0)
+    dataset = dataset[COLUMNS]
     train, validation, test = np.split(
         dataset, [int(0.7 * len(dataset)), int(0.85 * len(dataset))]
     )
 
-    train.to_csv(f"{base_dir}/train/train.csv", header=False, index=False)
-    validation.to_csv(f"{base_dir}/validation/validation.csv", header=False, index=False)
-    test.to_csv(f"{base_dir}/test/test.csv", header=False, index=False)
+    train.to_csv(f"{base_dir}/train/train.csv", header=True, index=False)
+    validation.to_csv(
+        f"{base_dir}/validation/validation.csv", header=True, index=False
+    )
+    test.to_csv(f"{base_dir}/test/test.csv", header=True, index=False)

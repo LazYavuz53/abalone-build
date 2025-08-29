@@ -50,7 +50,7 @@ COLUMNS = [
 
 def _load_dataset(path: str) -> pd.DataFrame:
     """Load dataset saved by preprocess step."""
-    df = pd.read_csv(path, header=None, names=COLUMNS)
+    df = pd.read_csv(path)
     # cast categorical columns to category dtype
     for col in [
         "Supplier",
