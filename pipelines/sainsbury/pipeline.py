@@ -14,7 +14,6 @@ import boto3
 import sagemaker
 import sagemaker.session
 
-from sagemaker.estimator import Estimator
 from sagemaker.inputs import TrainingInput
 from sagemaker.model_metrics import (
     MetricsSource,
@@ -23,8 +22,8 @@ from sagemaker.model_metrics import (
 from sagemaker.processing import (
     ProcessingInput,
     ProcessingOutput,
-    ScriptProcessor,
 )
+from sagemaker.sklearn.estimator import SKLearn
 from sagemaker.sklearn.processing import SKLearnProcessor
 from sagemaker.workflow.conditions import ConditionGreaterThanOrEqualTo
 from sagemaker.workflow.condition_step import (
@@ -193,15 +192,10 @@ def get_pipeline(
 
     # training step for generating model artifacts
     model_path = f"s3://{sagemaker_session.default_bucket()}/{base_job_prefix}/CatalogueTrain"
-    image_uri = sagemaker.image_uris.retrieve(
-        framework="xgboost",
-        region=region,
-        version="1.0-1",
-        py_version="py3",
-        instance_type=training_instance_type,
-    )
-    xgb_train = Estimator(
-        image_uri=image_uri,
+    sklearn_train = SKLearn(
+        entry_point="train.py",
+        source_dir=BASE_DIR,
+        framework_version="0.23-1",
         instance_type=training_instance_type,
         instance_count=1,
         output_path=model_path,
@@ -209,17 +203,7 @@ def get_pipeline(
         sagemaker_session=pipeline_session,
         role=role,
     )
-    xgb_train.set_hyperparameters(
-        objective="binary:logistic",
-        num_round=50,
-        max_depth=5,
-        eta=0.2,
-        gamma=4,
-        min_child_weight=6,
-        subsample=0.7,
-        silent=0,
-    )
-    step_args = xgb_train.fit(
+    step_args = sklearn_train.fit(
         inputs={
             "train": TrainingInput(
                 s3_data=step_process.properties.ProcessingOutputConfig.Outputs[
@@ -241,9 +225,8 @@ def get_pipeline(
     )
 
     # processing step for evaluation
-    script_eval = ScriptProcessor(
-        image_uri=image_uri,
-        command=["python3"],
+    script_eval = SKLearnProcessor(
+        framework_version="0.23-1",
         instance_type=processing_instance_type,
         instance_count=1,
         base_job_name=f"{base_job_prefix}/script-catalogue-eval",
@@ -289,7 +272,7 @@ def get_pipeline(
         )
     )
     model = Model(
-        image_uri=image_uri,
+        image_uri=sklearn_train.image_uri,
         model_data=step_train.properties.ModelArtifacts.S3ModelArtifacts,
         sagemaker_session=pipeline_session,
         role=role,
