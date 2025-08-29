@@ -25,72 +25,72 @@ The template provides a starting point for bringing your SageMaker Pipeline deve
 `-- tox.ini
 ```
 
-## Start here
-This is a sample code repository that demonstrates how you can organize your code for an ML business solution. This code repository is created as part of creating a Project in SageMaker. 
+# 📘 Argos Discontinuation Prediction Pipeline
 
-In this example, we are solving the abalone age prediction problem using the abalone dataset (see below for more on the dataset). The following section provides an overview of how the code is organized and what you need to modify. In particular, `pipelines/pipelines.py` contains the core of the business logic for this problem. It has the code to express the ML steps involved in generating an ML model. You will also find the code for that supports preprocessing and evaluation steps in `preprocess.py` and `evaluate.py` files respectively.
+This project builds a SageMaker ML pipeline to predict whether products will be **discontinued** in upcoming Argos catalogue range refreshes.  
+The solution supports **preprocessing, model training, evaluation, and artifact storage** in S3, as shown in figure 1.
 
-Once you understand the code structure described below, you can inspect the code and you can start customizing it for your own business case. This is only sample code, and you own this repository for your business use case. Please go ahead, modify the files, commit them and see the changes kick off the SageMaker pipelines in the CICD system.
+![Succesfull Pipeline Run](images/completed_pipeline.png)
 
-You can also use the `sagemaker-pipelines-project.ipynb` notebook to experiment from SageMaker Studio before you are ready to checkin your code.
+---
 
-A description of some of the artifacts is provided below:
-<br/><br/>
-Your codebuild execution instructions. This file contains the instructions needed to kick off an execution of the SageMaker Pipeline in the CICD system (via CodePipeline). You will see that this file has the fields definined for naming the Pipeline, ModelPackageGroup etc. You can customize them as required.
+## 🔄 Pipeline Stages
 
-```
-|-- codebuild-buildspec.yml
-```
+1. **Preprocessing**
+   - Joins `ProductDetails` and `CatalogueDiscontinuation` datasets.
+   - Cleans and encodes categorical variables (Supplier, Hierarchy levels, DI/DOM, etc.).
+   - Filters to relevant horizons (`-12w, -8w, -4w`) for stable and realistic signals.
+   - Outputs a parquet dataset for downstream training.
 
-<br/><br/>
-Your pipeline artifacts, which includes a pipeline module defining the required `get_pipeline` method that returns an instance of a SageMaker pipeline, a preprocessing script that is used in feature engineering, and a model evaluation script to measure the Mean Squared Error of the model that's trained by the pipeline. This is the core business logic, and if you want to create your own folder, you can do so, and implement the `get_pipeline` interface as illustrated here.
+2. **Training**
+   - Trains separate LightGBM models **per horizon** (`-12w, -8w, -4w`).
+   - Uses early stopping and cross-validation metrics (`AUC`, `PR AUC`).
+   - Stores trained model artifacts to S3 (`lgbm_model_horizon_Xw.txt`).
 
-```
-|-- pipelines
-|   |-- abalone
-|   |   |-- evaluate.py
-|   |   |-- __init__.py
-|   |   |-- pipeline.py
-|   |   `-- preprocess.py
+3. **Evaluation**
+   - Computes accuracy, precision, recall, F1, ROC AUC, and PR AUC.
+   - Generates and saves plots:
+     - Confusion Matrix  
+     - ROC Curve  
+     - Precision-Recall Curve  
+     - Feature Importance  
+     - Threshold Tuning (Precision/Recall/F1 vs Threshold)  
+   - Evaluation figures are saved automatically to S3.
 
-```
-<br/><br/>
-Utility modules for getting pipeline definition jsons and running pipelines (you do not typically need to modify these):
+---
 
-```
-|-- pipelines
-|   |-- get_pipeline_definition.py
-|   |-- __init__.py
-|   |-- run_pipeline.py
-|   |-- _utils.py
-|   `-- __version__.py
-```
-<br/><br/>
-Python package artifacts:
-```
-|-- setup.cfg
-|-- setup.py
-```
-<br/><br/>
-A stubbed testing module for testing your pipeline as you develop:
-```
-|-- tests
-|   `-- test_pipelines.py
-```
-<br/><br/>
-The `tox` testing framework configuration:
-```
-`-- tox.ini
-```
+## 📊 Business Value
 
-## Dataset for the Example Abalone Pipeline
+- **-12w models:** Early warning, useful for supplier negotiations and long-lead planning.  
+- **-8w models:** Best balance of early signal and reliability; supports operational planning.  
+- **-4w models:** Highest accuracy and recall; best for clearance and final stock decisions.  
 
-The dataset used is the [UCI Machine Learning Abalone Dataset](https://archive.ics.uci.edu/ml/datasets/abalone) [1]. The aim for this task is to determine the age of an abalone (a kind of shellfish) from its physical measurements. At the core, it's a regression problem. 
-    
-The dataset contains several features - length (longest shell measurement), diameter (diameter perpendicular to length), height (height with meat in the shell), whole_weight (weight of whole abalone), shucked_weight (weight of meat), viscera_weight (gut weight after bleeding), shell_weight (weight after being dried), sex ('M', 'F', 'I' where 'I' is Infant), as well as rings (integer).
+---
 
-The number of rings turns out to be a good approximation for age (age is rings + 1.5). However, to obtain this number requires cutting the shell through the cone, staining the section, and counting the number of rings through a microscope -- a time-consuming task. However, the other physical measurements are easier to determine. We use the dataset to build a predictive model of the variable rings through these other physical measurements.
+## 🚀 How to Run
 
-We'll upload the data to a bucket we own. But first we gather some constants we can use later throughout the notebook.
+1. Trigger the SageMaker pipeline from the console or CLI.  
+2. Monitor step execution (Preprocess → Train → Evaluate).  
+3. Retrieve:
+   - **Trained models** in S3 (`output/models/`).  
+   - **Evaluation plots & metrics** in S3 (`output/evaluation/`).  
 
-[1] Dua, D. and Graff, C. (2019). [UCI Machine Learning Repository](http://archive.ics.uci.edu/ml). Irvine, CA: University of California, School of Information and Computer Science.
+---
+
+## 📂 Outputs
+
+- **Models:** `lgbm_model_horizon_-12w.txt`, `lgbm_model_horizon_-8w.txt`, `lgbm_model_horizon_-4w.txt`  
+- **Evaluation Figures:** Confusion matrix, ROC, PR, feature importance, threshold tuning (per horizon)  
+
+---
+
+## ⚖️ Strategic Use
+
+- **-12w → Strategic foresight**  
+- **-8w → Operational sweet spot**  
+- **-4w → Tactical execution**  
+
+The pipeline enables **progressive decision-making**: flag risks early, refine mid-cycle, and confirm late.
+
+
+TO D0: Add integration script to automatically trigger sagemaker pipeline when a change is made to the repo.
