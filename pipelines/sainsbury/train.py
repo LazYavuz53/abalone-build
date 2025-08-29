@@ -1,14 +1,14 @@
 """Train LightGBM models per forecast horizon."""
 
-import sys, subprocess
-subprocess.check_call([sys.executable, "-m", "pip", "install", "lightgbm==3.3.5"])
-import lightgbm as lgb
-
-import os
-import pickle
-
-import pandas as pd
 from lightgbm import early_stopping, log_evaluation
+import pandas as pd
+import pickle
+import os
+import lightgbm as lgb
+import sys
+import subprocess
+subprocess.check_call([sys.executable, "-m", "pip", "install", "lightgbm==3.3.5"])
+
 
 FEATURES = [
     "Supplier",

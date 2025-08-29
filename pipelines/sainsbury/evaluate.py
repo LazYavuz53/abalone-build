@@ -1,25 +1,4 @@
 """Evaluate LightGBM models on the test set (version-proof plotting)."""
-import json
-import logging
-import os
-import pathlib
-import pickle
-import tarfile
-import sys
-import subprocess
-
-# Pin only what we truly need here; avoid touching scikit-learn version.
-subprocess.check_call([sys.executable, "-m", "pip", "install", "lightgbm==3.3.5"])
-subprocess.check_call([sys.executable, "-m", "pip", "install", "matplotlib"])
-
-import lightgbm as lgb
-import pandas as pd
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import boto3
-from urllib.parse import urlparse
-
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -33,6 +12,27 @@ from sklearn.metrics import (
     roc_curve,
     auc,
 )
+from urllib.parse import urlparse
+import boto3
+import matplotlib.pyplot as plt
+import matplotlib
+import pandas as pd
+import lightgbm as lgb
+import json
+import logging
+import os
+import pathlib
+import pickle
+import tarfile
+import sys
+import subprocess
+
+# Pin only what we truly need here; avoid touching scikit-learn version.
+subprocess.check_call([sys.executable, "-m", "pip", "install", "lightgbm==3.3.5"])
+subprocess.check_call([sys.executable, "-m", "pip", "install", "matplotlib"])
+
+matplotlib.use("Agg")
+
 
 FEATURES = [
     "Supplier",
