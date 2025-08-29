@@ -32,7 +32,6 @@ COLUMNS = [
 ]
 
 
-
 def to_bool01(s: pd.Series) -> pd.Series:
     """Normalize various boolean-like strings to 0/1 integers."""
     return (
@@ -144,9 +143,9 @@ if __name__ == "__main__":
     df.to_parquet(os.path.join(output_dir, "eda_joined.parquet"), index=False)
 
     cols_to_keep = [c for c in [
-        "CatEdition","SpringSummer","ProductKey","WeeksOut","Status",
-        "SalePriceIncVAT","ForecastPerWeek","ActualsPerWeek",
-        "DiscontinuedTF","Supplier","HierarchyLevel1","HierarchyLevel2","DIorDOM","Seasonal"
+        "CatEdition", "SpringSummer", "ProductKey", "WeeksOut", "Status",
+        "SalePriceIncVAT", "ForecastPerWeek", "ActualsPerWeek",
+        "DiscontinuedTF", "Supplier", "HierarchyLevel1", "HierarchyLevel2", "DIorDOM", "Seasonal"
     ] if c in df.columns]
     model_df = df[cols_to_keep].copy()
     model_df.to_parquet(os.path.join(output_dir, "eda_model_ready.parquet"), index=False)

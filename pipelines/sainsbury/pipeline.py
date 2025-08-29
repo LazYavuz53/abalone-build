@@ -49,19 +49,20 @@ from sagemaker.workflow.pipeline_context import PipelineSession
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
+
 def get_sagemaker_client(region):
-     """Gets the sagemaker client.
+    """Gets the sagemaker client.
 
-        Args:
-            region: the aws region to start the session
-            default_bucket: the bucket to use for storing the artifacts
+       Args:
+           region: the aws region to start the session
+           default_bucket: the bucket to use for storing the artifacts
 
-        Returns:
-            `sagemaker.session.Session instance
-        """
-     boto_session = boto3.Session(region_name=region)
-     sagemaker_client = boto_session.client("sagemaker")
-     return sagemaker_client
+       Returns:
+           `sagemaker.session.Session instance
+       """
+    boto_session = boto3.Session(region_name=region)
+    sagemaker_client = boto_session.client("sagemaker")
+    return sagemaker_client
 
 
 def get_session(region, default_bucket):
@@ -86,6 +87,7 @@ def get_session(region, default_bucket):
         default_bucket=default_bucket,
     )
 
+
 def get_pipeline_session(region, default_bucket):
     """Gets the pipeline session based on the region.
 
@@ -105,6 +107,7 @@ def get_pipeline_session(region, default_bucket):
         sagemaker_client=sagemaker_client,
         default_bucket=default_bucket,
     )
+
 
 def get_pipeline_custom_tags(new_tags, region, sagemaker_project_name=None):
     try:
