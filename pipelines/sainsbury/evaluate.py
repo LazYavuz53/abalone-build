@@ -5,7 +5,9 @@ import os
 import pathlib
 import pickle
 import tarfile
-
+import sys, subprocess
+subprocess.check_call([sys.executable, "-m", "pip", "install", "lightgbm==3.3.5"])
+import lightgbm as lgb
 import pandas as pd
 from sklearn.metrics import (
     accuracy_score,
