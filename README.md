@@ -96,3 +96,5 @@ The pipeline enables **progressive decision-making**: flag risks early, refine m
 TODO: Create an integration script to automatically trigger sagemaker pipeline backend whenever a changes is made to the repo
 
 TODO: Parallelize training per horizon
+
+TODO: Update docker images to avoid runtime installation
